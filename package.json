@@ -1,0 +1,25 @@
+{
+  "name": "dungeon-generator-cicd",
+  "version": "1.0.0",
+  "description": "Object-Oriented Dungeon Generator with Automated CI/CD Pipeline on AWS EC2",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tests/dungeon.test.js"
+  },
+  "keywords": [
+    "dungeon-generator",
+    "cpp-oops",
+    "cicd",
+    "jenkins",
+    "kubernetes",
+    "docker",
+    "aws-ec2"
+  ],
+  "author": "Akhand Pratap Singh",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.22.3",
+    "puppeteer-core": "^25.16.0"
+  }
+}

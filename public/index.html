@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dungeon Generator — CI/CD Pipeline on AWS EC2</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="top-nav">
+    <div class="nav-brand">
+      <span class="brand-icon">⚔️</span>
+      <span class="brand-title">Dungeon Generator</span>
+      <span class="version-badge" id="versionBadge">v1.0.0</span>
+    </div>
+    <div class="nav-meta">
+      <span class="cloud-pill">☁️ AWS EC2</span>
+      <span class="pipeline-pill">⚙️ Jenkins CI/CD</span>
+      <span class="k8s-pill">☸️ Kubernetes (k3s)</span>
+      <span class="status-indicator"><span class="dot"></span> Online</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header Banner -->
+    <header class="hero">
+      <div class="hero-content">
+        <h1>PROCEDURAL DUNGEON GENERATOR</h1>
+        <p class="subtitle">Object-Oriented C++ Engine with Automated Delivery Pipeline</p>
+        <div class="author-tag">
+          <span>Student: <strong>Akhand Pratap Singh</strong></span> &bull;
+          <span>Course: <strong>TYCSE Cloud Computing & DevOps (CCA 2)</strong></span>
+        </div>
+      </div>
+      <div class="version-callout">
+        <div class="version-label">ACTIVE BUILD VERSION</div>
+        <div class="version-number" id="heroVersion">v1.0.0</div>
+        <div class="build-target">EC2 Cluster: ap-south-1</div>
+      </div>
+    </header>
+
+    <!-- Main Game Section -->
+    <main class="game-layout">
+      <!-- Left Column: Controls & Player HUD -->
+      <aside class="sidebar">
+        <!-- Setup Card -->
+        <div class="card setup-card">
+          <h2 class="card-title">⚙️ Dungeon Config</h2>
+          <div class="form-group">
+            <label for="roomInput">Number of Rooms:</label>
+            <input type="number" id="roomInput" value="5" min="3" max="20">
+          </div>
+          <button id="startBtn" class="btn btn-primary">⚔️ Generate & Start</button>
+        </div>
+
+        <!-- Player HUD Card -->
+        <div class="card player-card">
+          <h2 class="card-title">🧍 Hero Status</h2>
+          
+          <div class="stat-group">
+            <div class="stat-header">
+              <span>Health Points (HP)</span>
+              <span id="playerHpText">100 / 100</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="playerHpBar" class="progress-bar-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <div class="rank-container">
+            <span class="rank-label">Rank Status:</span>
+            <span id="rankBadge" class="rank-badge legend">🔥 LEGEND</span>
+          </div>
+
+          <div class="stats-grid">
+            <div class="mini-stat">
+              <span class="mini-stat-label">Sneak Count</span>
+              <span id="sneakCountText" class="mini-stat-val">0</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-stat-label">Gold Treasure</span>
+              <span id="goldText" class="mini-stat-val">0 💰</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-stat-label">Current Room</span>
+              <span id="roomCountText" class="mini-stat-val">0 / 5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CI/CD System Info Card -->
+        <div class="card cicd-card">
+          <h2 class="card-title">📊 Pipeline Health</h2>
+          <div class="cicd-item">
+            <span>Container:</span>
+            <strong>Docker Hub Multi-Stage</strong>
+          </div>
+          <div class="cicd-item">
+            <span>Orchestration:</span>
+            <strong>Kubernetes (2 Replicas)</strong>
+          </div>
+          <div class="cicd-item">
+            <span>Health Endpoint:</span>
+            <a href="/health" target="_blank" class="health-link">/health (200 OK)</a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Column: Interactive Dungeon Chamber & Battle Field -->
+      <section class="chamber-section">
+        <!-- Room Chamber Visualizer -->
+        <div class="card chamber-card">
+          <div class="chamber-header">
+            <span class="chamber-badge" id="chamberNumberBadge">Room Chamber #1</span>
+            <span class="chamber-status" id="chamberStatusText">Awaiting Entry...</span>
+          </div>
+
+          <div class="battlefield" id="battlefield">
+            <!-- Dynamic Room Content Injected by JS -->
+            <div class="empty-state" id="emptyState">
+              <div class="pixel-gate">🏰</div>
+              <h3>The Dungeon Gate is Sealed</h3>
+              <p>Configure room count on the left and click <strong>Generate & Start</strong> to begin.</p>
+            </div>
+
+            <!-- Active Encounter Box -->
+            <div class="encounter-display" id="encounterDisplay" style="display: none;">
+              <div class="entity-card enemy-card" id="enemyCard">
+                <div class="entity-icon" id="enemyIcon">👺</div>
+                <h3 class="entity-name" id="enemyName">Goblin</h3>
+                <div class="stat-header">
+                  <span>Enemy HP</span>
+                  <span id="enemyHpText">30 / 30</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div id="enemyHpBar" class="progress-bar-fill enemy-hp" style="width: 100%;"></div>
+                </div>
+                <div class="entity-atk" id="enemyAtkText">ATK Power: 5</div>
+              </div>
+
+              <!-- Loot Box -->
+              <div class="entity-card loot-card" id="lootCard" style="display: none;">
+                <div class="entity-icon" id="lootIcon">🧪</div>
+                <h3 class="entity-name" id="lootName">Health Potion</h3>
+                <div class="loot-desc" id="lootDesc">Recover +25 HP upon defeating enemy!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Controls Bar -->
+          <div class="action-bar" id="actionBar" style="display: none;">
+            <button id="attackBtn" class="btn btn-attack">⚔️ Attack Enemy</button>
+            <button id="sneakBtn" class="btn btn-sneak">🕵️ Sneak Past</button>
+            <button id="nextBtn" class="btn btn-next">🚪 Next Room</button>
+          </div>
+        </div>
+
+        <!-- Combat & Adventure Log Box -->
+        <div class="card log-card">
+          <div class="log-header">
+            <h3>📜 Combat & Adventure Chronicle</h3>
+            <button id="clearLogBtn" class="btn-text">Clear</button>
+          </div>
+          <div class="terminal-log" id="logBox">
+            <div class="log-entry sys">[SYSTEM] Procedural Dungeon Generator Initialized.</div>
+            <div class="log-entry sys">[SYSTEM] CI/CD Pipeline ready. Build version loaded.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2026 Akhand Pratap Singh &bull; Continuous Competency Assessment 2 &bull; Cloud Computing & DevOps</p>
+      <p class="footer-small">Demonstrating Automated CI/CD Pipeline on AWS EC2 with GitHub, Jenkins, Docker, and Kubernetes.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

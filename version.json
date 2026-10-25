@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "appName": "Dungeon Generator CI/CD",
+  "buildDate": "2026-10-25",
+  "author": "Akhand Pratap Singh",
+  "pipeline": "Jenkins AWS EC2 Pipeline"
+}
