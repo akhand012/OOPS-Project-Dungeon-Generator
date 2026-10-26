@@ -20,6 +20,7 @@ spec:
       labels:
         app: dungeon-generator
     spec:
+      terminationGracePeriodSeconds: 5
       containers:
       - name: dungeon-generator
         image: akhand012/dungeon-generator:latest
@@ -37,19 +38,19 @@ spec:
             cpu: "500m"
             memory: "256Mi"
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: "50m"
+            memory: "64Mi"
         livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
           httpGet:
             path: /health
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 2
+          periodSeconds: 2
+          timeoutSeconds: 2

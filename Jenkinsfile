@@ -130,7 +130,7 @@ pipeline {
 
     post {
         always {
-            cleanWs deleteDirs: true, notFailBuild: true
+            deleteDir()
         }
         success {
             echo "🎉 PIPELINE EXECUTION SUCCESSFUL! Dungeon Generator is live and updated."
