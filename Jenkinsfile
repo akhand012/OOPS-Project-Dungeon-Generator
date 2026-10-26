@@ -62,17 +62,19 @@ pipeline {
                 sh '''
                     echo "Importing built image directly into k3s containerd runtime..."
                     docker save ${DOCKER_IMAGE}:${BUILD_NUMBER} | sudo k3s ctr images import - || true
+                    sync
+                    sleep 3
                 '''
                 withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         if [ -n "$DOCKER_PASS" ] && [ "$DOCKER_PASS" != "dummy" ]; then
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                             echo "Pushing image tags to Docker Hub repository ${DOCKER_IMAGE}..."
-                            docker push ${DOCKER_IMAGE}:${BUILD_NUMBER} || true
-                            docker push ${DOCKER_IMAGE}:latest || true
+                            docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                            docker push ${DOCKER_IMAGE}:latest
                             echo "Docker Hub push complete!"
                         else
-                            echo "Docker Hub credentials not provided; local k3s containerd image will be deployed."
+                            echo "Docker Hub credentials not configured; local containerd image deployed directly into k3s."
                         fi
                     '''
                 }
@@ -85,12 +87,16 @@ pipeline {
                 echo "☸️ STAGE 5: APPLYING KUBERNETES MANIFESTS & ROLLING UPDATE"
                 echo "=========================================================="
                 sh '''
+                    echo "Verifying Kubernetes API server connectivity..."
+                    kubectl version --request-timeout=30s
+                    kubectl get nodes --request-timeout=30s
+
                     echo "Applying Service configuration..."
-                    kubectl apply -f k8s/service.yaml --validate=false
+                    kubectl apply -f k8s/service.yaml --request-timeout=30s
 
                     echo "Updating deployment image to ${DOCKER_IMAGE}:${BUILD_NUMBER}..."
                     sed -i "s|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${BUILD_NUMBER}|g" k8s/deployment.yaml
-                    kubectl apply -f k8s/deployment.yaml --validate=false
+                    kubectl apply -f k8s/deployment.yaml --request-timeout=30s
 
                     echo "Awaiting rollout status confirmation..."
                     kubectl rollout status deployment/dungeon-generator-deployment --timeout=180s
@@ -109,9 +115,9 @@ pipeline {
                 echo "=========================================================="
                 sh '''
                     echo "Querying HTTP health probe on NodePort ${PORT}..."
-                    sleep 3
+                    sleep 5
                     
-                    HEALTH_RESPONSE=$(curl -s -f http://localhost:${PORT}/health || curl -s -f http://127.0.0.1:${PORT}/health)
+                    HEALTH_RESPONSE=$(curl -s -f --max-time 10 http://localhost:${PORT}/health || curl -s -f --max-time 10 http://127.0.0.1:${PORT}/health)
                     echo "Health Response: ${HEALTH_RESPONSE}"
 
                     echo "${HEALTH_RESPONSE}" | grep -q '"status":"UP"' || {
@@ -120,7 +126,15 @@ pipeline {
                     }
 
                     APP_VERSION=$(echo "${HEALTH_RESPONSE}" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-                    echo "✅ APPLICATION HEALTH CONFIRMED: Status UP | Version: ${APP_VERSION}"
+                    EXPECTED_VERSION=$(grep -o '"version": *"[^"]*"' version.json | cut -d'"' -f4)
+                    echo "Reported Version: ${APP_VERSION} | Expected Version: ${EXPECTED_VERSION}"
+
+                    if [ "${APP_VERSION}" != "${EXPECTED_VERSION}" ]; then
+                        echo "❌ Version mismatch! Expected ${EXPECTED_VERSION} but live application reported ${APP_VERSION}."
+                        exit 1
+                    fi
+
+                    echo "✅ APPLICATION HEALTH & VERSION CONFIRMED: Status UP | Version: ${APP_VERSION}"
                     echo "🌐 Live URL accessible at: http://3.108.51.253:${PORT}/"
                 '''
             }
