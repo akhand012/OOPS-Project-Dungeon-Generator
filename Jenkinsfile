@@ -94,7 +94,7 @@ pipeline {
                     kubectl apply -f k8s/deployment.yaml
 
                     echo "Awaiting rollout status confirmation..."
-                    kubectl rollout status deployment/dungeon-generator-deployment --timeout=120s
+                    kubectl rollout status deployment/dungeon-generator-deployment --timeout=180s
 
                     echo "Current Kubernetes Cluster Resources:"
                     kubectl get pods -l app=dungeon-generator -o wide
