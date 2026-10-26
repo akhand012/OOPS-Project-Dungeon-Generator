@@ -23,7 +23,7 @@ spec:
       containers:
       - name: dungeon-generator
         image: akhand012/dungeon-generator:latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
           name: http

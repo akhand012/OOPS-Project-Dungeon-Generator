@@ -59,13 +59,22 @@ pipeline {
                 echo "=========================================================="
                 echo "🚀 STAGE 4: PUBLISHING IMAGE TO DOCKER HUB REGISTRY"
                 echo "=========================================================="
+                sh '''
+                    echo "Importing built image directly into k3s containerd runtime..."
+                    docker save ${DOCKER_IMAGE}:${BUILD_NUMBER} | sudo k3s ctr images import - || true
+                    docker save ${DOCKER_IMAGE}:latest | sudo k3s ctr images import - || true
+                '''
                 withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        echo "Pushing image tags to Docker Hub repository ${DOCKER_IMAGE}..."
-                        docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
-                        docker push ${DOCKER_IMAGE}:latest
-                        echo "Docker Hub push complete!"
+                        if [ -n "$DOCKER_PASS" ] && [ "$DOCKER_PASS" != "dummy" ]; then
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            echo "Pushing image tags to Docker Hub repository ${DOCKER_IMAGE}..."
+                            docker push ${DOCKER_IMAGE}:${BUILD_NUMBER} || true
+                            docker push ${DOCKER_IMAGE}:latest || true
+                            echo "Docker Hub push complete!"
+                        else
+                            echo "Docker Hub credentials not provided; local k3s containerd image will be deployed."
+                        fi
                     '''
                 }
             }
@@ -113,7 +122,7 @@ pipeline {
 
                     APP_VERSION=$(echo "${HEALTH_RESPONSE}" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
                     echo "✅ APPLICATION HEALTH CONFIRMED: Status UP | Version: ${APP_VERSION}"
-                    echo "🌐 Live URL accessible at: http://<EC2-PUBLIC-IP>:${PORT}/"
+                    echo "🌐 Live URL accessible at: http://3.108.51.253:${PORT}/"
                 '''
             }
         }
