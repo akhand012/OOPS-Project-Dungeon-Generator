@@ -86,15 +86,15 @@ pipeline {
                 echo "☸️ STAGE 5: APPLYING KUBERNETES MANIFESTS & ROLLING UPDATE"
                 echo "=========================================================="
                 sh '''
-                    echo "Applying Deployment and Service configurations..."
-                    kubectl apply -f k8s/deployment.yaml
+                    echo "Applying Service configuration..."
                     kubectl apply -f k8s/service.yaml
 
                     echo "Updating deployment image to ${DOCKER_IMAGE}:${BUILD_NUMBER}..."
-                    kubectl set image deployment/dungeon-generator-deployment dungeon-generator=${DOCKER_IMAGE}:${BUILD_NUMBER}
+                    sed -i "s|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${BUILD_NUMBER}|g" k8s/deployment.yaml
+                    kubectl apply -f k8s/deployment.yaml
 
                     echo "Awaiting rollout status confirmation..."
-                    kubectl rollout status deployment/dungeon-generator-deployment --timeout=180s
+                    kubectl rollout status deployment/dungeon-generator-deployment --timeout=120s
 
                     echo "Current Kubernetes Cluster Resources:"
                     kubectl get pods -l app=dungeon-generator -o wide
