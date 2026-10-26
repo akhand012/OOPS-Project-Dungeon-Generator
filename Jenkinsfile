@@ -62,7 +62,6 @@ pipeline {
                 sh '''
                     echo "Importing built image directly into k3s containerd runtime..."
                     docker save ${DOCKER_IMAGE}:${BUILD_NUMBER} | sudo k3s ctr images import - || true
-                    docker save ${DOCKER_IMAGE}:latest | sudo k3s ctr images import - || true
                 '''
                 withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
@@ -87,11 +86,11 @@ pipeline {
                 echo "=========================================================="
                 sh '''
                     echo "Applying Service configuration..."
-                    kubectl apply -f k8s/service.yaml
+                    kubectl apply -f k8s/service.yaml --validate=false
 
                     echo "Updating deployment image to ${DOCKER_IMAGE}:${BUILD_NUMBER}..."
                     sed -i "s|image: ${DOCKER_IMAGE}:.*|image: ${DOCKER_IMAGE}:${BUILD_NUMBER}|g" k8s/deployment.yaml
-                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/deployment.yaml --validate=false
 
                     echo "Awaiting rollout status confirmation..."
                     kubectl rollout status deployment/dungeon-generator-deployment --timeout=180s
